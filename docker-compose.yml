@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      target: deps # Solo instalamos dependencias para desarrollo
+    container_name: chameleon-portfolio
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules # Evita que se borren los módulos instalados
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
