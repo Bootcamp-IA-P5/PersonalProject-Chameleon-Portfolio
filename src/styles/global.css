@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    background-color: #765b99;
+    background-image: radial-gradient(circle at top right, #1e293b 0%, #020617 40%);
+    background-attachment: fixed;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #ffffff;
+}
+
+/* Scrollbar elegante */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #2741b6;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #55709c;
+    border-radius: 10px;
+}
