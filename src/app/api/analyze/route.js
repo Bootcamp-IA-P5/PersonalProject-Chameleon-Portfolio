@@ -34,7 +34,24 @@ export async function POST(req) {
       Ordena el array de mayor a menor score.
     `;
 
-    const result = await model.generateContent(prompt);
+    // Función de espera para backoff exponencial
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // Función con reintento
+    const generateWithRetry = async (retries = 3, delay = 2000) => {
+      try {
+        return await model.generateContent(prompt);
+      } catch (error) {
+        if (retries > 0 && (error.message.includes('429') || error.status === 429)) {
+          console.log(`Rate limit hit, retrying in ${delay}ms...`);
+          await sleep(delay);
+          return generateWithRetry(retries - 1, delay * 2);
+        }
+        throw error;
+      }
+    };
+
+    const result = await generateWithRetry();
     const response = await result.response;
     const text = response.text();
 
@@ -46,6 +63,9 @@ export async function POST(req) {
     return NextResponse.json({ analysis });
   } catch (error) {
     console.error("Error en el cerebro de la IA:", error);
-    return NextResponse.json({ error: "Fallo en el análisis" }, { status: 500 });
+    const status = error.message.includes('429') || error.status === 429 ? 429 : 500;
+    const message = status === 429 ? "El cerebro de la IA está saturado. Inténtalo de nuevo en unos segundos." : "Fallo en el análisis";
+
+    return NextResponse.json({ error: message }, { status });
   }
 }
