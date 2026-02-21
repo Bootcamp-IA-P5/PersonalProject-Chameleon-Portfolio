@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion'; // Inyectamos la magia
 import { projects as initialProjects } from '../data/projects';
 import ProjectCard from '../components/projects/ProjectCard';
 import JDInput from '../components/ai/JDInput';
@@ -12,11 +13,13 @@ export default function Home() {
     const [jobDescription, setJobDescription] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [analyzed, setAnalyzed] = useState(false);
+    const [error, setError] = useState('');
 
     const handleAnalyze = async () => {
         if (!jobDescription.trim()) return;
 
         setIsLoading(true);
+        setError('');
         try {
             const res = await fetch('/api/analyze', {
                 method: 'POST',
@@ -25,6 +28,10 @@ export default function Home() {
             });
 
             const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Error al conectar con el servidor');
+            }
 
             if (data.analysis) {
                 const updated = data.analysis.map(item => {
@@ -36,6 +43,7 @@ export default function Home() {
             }
         } catch (err) {
             console.error("Error en la IA:", err);
+            setError(err.message);
         } finally {
             setIsLoading(false);
         }
@@ -49,28 +57,30 @@ export default function Home() {
                 <div className="max-w-5xl mx-auto">
 
                     {/* ── Hero ─────────────────────────────────────────── */}
-                    <section className="mb-24 pt-12">
-                        {/* Eyebrow */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8 }}
+                        className="mb-24 pt-12"
+                    >
                         <div className="flex items-center gap-2 mb-6">
                             <span className="h-px w-8 bg-cyan-500/60" />
                         </div>
 
-                        {/* Headline */}
                         <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white leading-none mb-6">
                             Portfolio{' '}
                             <span className="text-gradient">Camaleón</span>
                         </h1>
 
-                        <h2 className="text-5xl md:text-7xl font-black tracking-tighter text-white leading-none mb-6">
-                            Mi nombre es Aroa Mateo Gómez. Soy desarrolladora web e Inteligencia Artificial. Siempre he sido una apasionada de la tecnología, estoy dispuesta a nuevos retos y desafíos.{' '}
+                        <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-white/90 leading-tight mb-6">
+                            Soy Aroa Mateo Gómez. Desarrolladora web e Inteligencia Artificial.
                         </h2>
 
-                        {/* Subtitle */}
                         <p className="text-lg md:text-xl text-slate-400 max-w-2xl leading-relaxed mb-10">
                             Pega la descripción de una oferta de trabajo y la IA reordenará mis proyectos
-                            mostrándote los que mejor encajan con lo que buscas.
+                            mostrándote los que mejor se aplican con lo que buscas.
                         </p>
-                    </section>
+                    </motion.section>
 
                     {/* ── AI Analyzer ──────────────────────────────────── */}
                     <section id="analyzer" className="mb-24 scroll-mt-20">
@@ -83,6 +93,19 @@ export default function Home() {
                             onAnalyze={handleAnalyze}
                             loading={isLoading}
                         />
+
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-200 text-sm"
+                            >
+                                <p className="flex items-center gap-2">
+                                    <span className="text-xl">⚠️</span>
+                                    {error}
+                                </p>
+                            </motion.div>
+                        )}
                     </section>
 
                     {/* ── Projects ─────────────────────────────────────── */}
@@ -105,15 +128,34 @@ export default function Home() {
                             )}
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {displayProjects.map((project, i) => (
-                                <ProjectCard
-                                    key={project.id}
-                                    project={project}
-                                    index={i}
-                                />
-                            ))}
-                        </div>
+                        {/* Implementación de Framer Motion Layout para el Grid */}
+                        <motion.div
+                            layout
+                            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+                        >
+                            <AnimatePresence mode='popLayout'>
+                                {displayProjects.map((project, i) => (
+                                    <motion.div
+                                        key={project.id}
+                                        layout
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{
+                                            duration: 0.5,
+                                            type: "spring",
+                                            stiffness: 80,
+                                            damping: 15
+                                        }}
+                                    >
+                                        <ProjectCard
+                                            project={project}
+                                            index={i}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </motion.div>
                     </section>
 
                 </div>
