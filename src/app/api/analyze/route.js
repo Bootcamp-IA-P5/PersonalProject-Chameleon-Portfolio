@@ -1,12 +1,10 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import groq from "@/lib/groq";
 import { NextResponse } from "next/server";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+import { cleanAIJSONResponse } from "@/lib/jsonUtils";
 
 export async function POST(req) {
   try {
     const { jobDescription, projects } = await req.json();
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `
       Eres un reclutador IT experto en perfiles de IA y Data Science. 
@@ -17,7 +15,7 @@ export async function POST(req) {
       id: p.id,
       title: p.title,
       tech: p.tech,
-      desc: p.shortDescription
+      desc: p.shortDescription || p.fullDescription
     })))}
       
       TAREA:
@@ -34,37 +32,41 @@ export async function POST(req) {
       Ordena el array de mayor a menor score.
     `;
 
-    // Función de espera para backoff exponencial
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: "Eres un reclutador IT experto en perfiles de IA. Respondes siempre en formato JSON puro."
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      model: "llama-3.3-70b-versatile",
+      response_format: { type: "json_object" },
+    });
 
-    // Función con reintento
-    const generateWithRetry = async (retries = 3, delay = 2000) => {
-      try {
-        return await model.generateContent(prompt);
-      } catch (error) {
-        if (retries > 0 && (error.message.includes('429') || error.status === 429)) {
-          console.log(`Rate limit hit, retrying in ${delay}ms...`);
-          await sleep(delay);
-          return generateWithRetry(retries - 1, delay * 2);
-        }
-        throw error;
-      }
-    };
+    const text = chatCompletion.choices[0]?.message?.content || "";
 
-    const result = await generateWithRetry();
-    const response = await result.response;
-    const text = response.text();
-
-    // Limpieza de seguridad por si la IA añade markdown (```json ... ```)
-    const match = text.match(/(\[.*\])/s);
-    if (!match) throw new Error("La IA no devolvió un JSON válido");
-    const analysis = JSON.parse(match[1]);
-
-    return NextResponse.json({ analysis });
+    try {
+      const analysis = cleanAIJSONResponse(text);
+      return NextResponse.json({ analysis });
+    } catch (error) {
+      throw new Error(`Error al procesar el JSON de la IA: ${error.message}`);
+    }
   } catch (error) {
-    console.error("Error en el cerebro de la IA:", error);
-    const status = error.message.includes('429') || error.status === 429 ? 429 : 500;
-    const message = status === 429 ? "El cerebro de la IA está saturado. Inténtalo de nuevo en unos segundos." : "Fallo en el análisis";
+    console.error("Error en el cerebro de la IA (Groq):", error);
+    const status = error.status === 429 ? 429 : (error.status || 500);
+
+    let message;
+    if (status === 429) {
+      message = "El cerebro de la IA está saturado. Inténtalo de nuevo en unos segundos.";
+    } else if (error.error?.message) {
+      message = error.error.message;
+    } else {
+      message = error.message || "Fallo en el análisis";
+    }
 
     return NextResponse.json({ error: message }, { status });
   }
