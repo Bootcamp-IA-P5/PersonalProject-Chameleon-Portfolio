@@ -4,11 +4,6 @@ export default function Navbar() {
     return (
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-slate-800/60">
             <nav className="max-w-5xl mx-auto px-6 md:px-8 h-16 flex items-center justify-between">
-                {/* Logo */}
-                {/*<a href="#" className="text-white font-bold text-lg tracking-tight hover:text-cyan-400 transition-colors">*/}
-                {/*<span className="text-gradient">Aroa</span>*/}
-                {/*<span className="text-slate-300"> Mateo</span>*/}
-                {/*</a>*/}
 
                 {/* Nav links */}
                 <div className="flex items-center gap-6">

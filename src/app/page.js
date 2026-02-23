@@ -1,53 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion'; // Inyectamos la magia
-import { projects as initialProjects } from '../data/projects';
-import ProjectCard from '../components/projects/ProjectCard';
+import { motion } from 'framer-motion';
+import useChameleon from '../hooks/useChameleon';
+import ProjectList from '../components/projects/ProjectList';
 import JDInput from '../components/ai/JDInput';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
 export default function Home() {
-    const [displayProjects, setDisplayProjects] = useState(initialProjects);
-    const [jobDescription, setJobDescription] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [analyzed, setAnalyzed] = useState(false);
-    const [error, setError] = useState('');
-
-    const handleAnalyze = async () => {
-        if (!jobDescription.trim()) return;
-
-        setIsLoading(true);
-        setError('');
-        try {
-            const res = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ jobDescription, projects: initialProjects }),
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || 'Error al conectar con el servidor');
-            }
-
-            if (data.analysis) {
-                const updated = data.analysis.map(item => {
-                    const project = initialProjects.find(p => p.id === item.id);
-                    return { ...project, score: item.score, pitch: item.pitch };
-                });
-                setDisplayProjects(updated);
-                setAnalyzed(true);
-            }
-        } catch (err) {
-            console.error("Error en la IA:", err);
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const {
+        displayProjects,
+        jobDescription,
+        setJobDescription,
+        isLoading,
+        analyzed,
+        error,
+        handleAnalyze,
+        reset
+    } = useChameleon();
 
     return (
         <>
@@ -109,54 +79,23 @@ export default function Home() {
                     </section>
 
                     {/* ── Projects ─────────────────────────────────────── */}
-                    <section id="projects" className="scroll-mt-20">
-                        <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
-                            <h2 className="text-2xl font-bold text-white">
-                                {analyzed ? '✦ Proyectos ordenados por relevancia' : 'Mis Proyectos'}
-                            </h2>
-                            {analyzed && (
+                    {analyzed && (
+                        <section id="projects" className="scroll-mt-20">
+                            <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
+                                <h2 className="text-2xl font-bold text-white">
+                                    ✦ Proyectos ordenados por relevancia
+                                </h2>
                                 <button
-                                    onClick={() => {
-                                        setDisplayProjects(initialProjects);
-                                        setAnalyzed(false);
-                                        setJobDescription('');
-                                    }}
+                                    onClick={reset}
                                     className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-3 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700"
                                 >
                                     Restablecer
                                 </button>
-                            )}
-                        </div>
+                            </div>
 
-                        {/* Implementación de Framer Motion Layout para el Grid */}
-                        <motion.div
-                            layout
-                            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                        >
-                            <AnimatePresence mode='popLayout'>
-                                {displayProjects.map((project, i) => (
-                                    <motion.div
-                                        key={project.id}
-                                        layout
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.9 }}
-                                        transition={{
-                                            duration: 0.5,
-                                            type: "spring",
-                                            stiffness: 80,
-                                            damping: 15
-                                        }}
-                                    >
-                                        <ProjectCard
-                                            project={project}
-                                            index={i}
-                                        />
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </motion.div>
-                    </section>
+                            <ProjectList projects={displayProjects} analyzed={analyzed} />
+                        </section>
+                    )}
 
                 </div>
             </main>

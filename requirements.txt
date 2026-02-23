@@ -1,0 +1,33 @@
+# ===================================
+# Portfolio Camaleón — Dependencias
+# ===================================
+# Runtime: Node.js 20 (Alpine)
+# Package Manager: npm
+
+# --- DEPENDENCIAS DE PRODUCCIÓN ---
+next==16.1.6
+react==19.2.3
+react-dom==19.2.3
+groq-sdk==0.37.0
+framer-motion==12.34.2
+clsx==2.1.1
+tailwind-merge==3.5.0
+@google/generative-ai==0.24.1
+
+# --- DEPENDENCIAS DE DESARROLLO ---
+tailwindcss==4.x
+@tailwindcss/postcss==4.x
+eslint==10.0.0
+eslint-config-next==0.2.4
+jest==30.2.0
+jest-environment-jsdom==30.2.0
+@testing-library/react==16.3.2
+@testing-library/dom==10.4.1
+@testing-library/jest-dom==6.9.1
+@testing-library/user-event==14.6.1
+cypress==15.10.0
+@types/react==19.2.14
+
+# --- INFRAESTRUCTURA ---
+# Docker (node:20-alpine)
+# Docker Compose
